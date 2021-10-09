@@ -169,9 +169,14 @@ impl Todo {
             .expect("Couldn't open the todo file");
 
         let mut buffer = BufWriter::new(todofile);
+        
+        //Check if task contains a double ~~ and ends with one
+        //technically this isn't part of the markdown spec but github
+        //markdown uses this for strikethrough
+        let strikethrough_regex = Regex::new(r"~~.*~~$").unwrap();
 
         for (pos, line) in self.todo.iter().enumerate() {
-            if args.contains(&"done".to_string()) && &line[..4] == "[*] " {
+            if args.contains(&"done".to_string()) && strikethrough_regex.is_match(line) {
                 continue;
             }
             if args.contains(&(pos + 1).to_string()) {
@@ -188,25 +193,34 @@ impl Todo {
 
     // Sorts done tasks
     pub fn sort(&self) {
-        // Creates a new empty string
-        let newtodo: String;
+        let mut todo = Vec::new();
+        let mut done = Vec::new();
 
-        let mut todo = String::new();
-        let mut done = String::new();
-
-        for line in self.todo.iter() {
-            if line.len() > 5 {
-                if &line[..4] == "[ ] " {
-                    let line = format!("{}\n", line);
-                    todo.push_str(&line);
-                } else if &line[..4] == "[*] " {
-                    let line = format!("{}\n", line);
-                    done.push_str(&line);
-                }
+        let strikethrough_regex = Regex::new(r"~~.*~~$").unwrap();
+        let valid_item_regex = Regex::new(r"^[0-9]*\. ").unwrap();
+        let content_regex = Regex::new(r"^[0-9]*\. (.*)").unwrap();
+        
+        //Create two vectors. One for items that are done and one that aren't
+        //Strip the numbering from the start
+        for task in self.todo.iter() {
+            let task_content = content_regex.captures(task).unwrap().get(1).unwrap().as_str().to_string();
+            if !valid_item_regex.is_match(task) {
+                continue;
+            }
+            if !strikethrough_regex.is_match(task) {
+                todo.push(task_content);
+            } else {
+                done.push(task_content);
             }
         }
-
-        newtodo = format!("{}{}", &todo, &done);
+        todo.append(&mut done);
+        //Reapply numbering for markdown
+        for i in 0..todo.len() {
+            todo[i] = format!("{}. {}", i, todo[i]);
+        }
+        
+        //Turn our now complete todo vector into a string
+        let newtodo = todo.join("\n");
         // Opens the TODO file with a permission to:
         let mut todofile = OpenOptions::new()
             .write(true) // a) write
