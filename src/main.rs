@@ -2,7 +2,7 @@ use std::env;
 use todo_bin::{help, Todo};
 
 fn main() {
-    let todo = Todo::new().expect("Couldn't create the todo instance");
+    let mut todo = Todo::new().expect("Couldn't create the todo instance");
 
     let args: Vec<String> = env::args().collect();
 

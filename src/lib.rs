@@ -203,10 +203,10 @@ impl Todo {
         //Create two vectors. One for items that are done and one that aren't
         //Strip the numbering from the start
         for task in self.todo.iter() {
-            let task_content = content_regex.captures(task).unwrap().get(1).unwrap().as_str().to_string();
             if !valid_item_regex.is_match(task) {
                 continue;
             }
+            let task_content = content_regex.captures(task).unwrap().get(1).unwrap().as_str().to_string();
             if !strikethrough_regex.is_match(task) {
                 todo.push(task_content);
             } else {
@@ -234,7 +234,7 @@ impl Todo {
             .expect("Error while trying to save the todofile");
     }
 
-    pub fn done(&self, args: &[String]) {
+    pub fn done(&mut self, args: &[String]) {
         if args.is_empty() {
             eprintln!("todo done takes at least 1 argument");
             process::exit(1);
@@ -243,32 +243,37 @@ impl Todo {
         // Opens the TODO file with a permission to overwrite it
         let todofile = OpenOptions::new()
             .write(true)
+            .truncate(true)
             .open(self.todo_path.clone())
             .expect("Couldn't open the todofile");
         let mut buffer = BufWriter::new(todofile);
+        
+        let strikethrough_regex = Regex::new(r"~~.*~~$").unwrap();
+        let valid_item_regex = Regex::new(r"^[0-9]*\. ").unwrap();
+        let content_regex = Regex::new(r"^[0-9]*\. (.*)").unwrap();
 
-        for (pos, line) in self.todo.iter().enumerate() {
-            if line.len() > 5 {
-                if args.contains(&(pos + 1).to_string()) {
-                    if &line[..4] == "[ ] " {
-                        let line = format!("[*] {}\n", &line[4..]);
-                        buffer
-                            .write_all(line.as_bytes())
-                            .expect("unable to write data");
-                    } else if &line[..4] == "[*] " {
-                        let line = format!("[ ] {}\n", &line[4..]);
-                        buffer
-                            .write_all(line.as_bytes())
-                            .expect("unable to write data");
-                    }
-                } else if &line[..4] == "[ ] " || &line[..4] == "[*] " {
-                    let line = format!("{}\n", line);
-                    buffer
-                        .write_all(line.as_bytes())
-                        .expect("unable to write data");
+        for (pos, line) in self.todo.iter_mut().enumerate() {
+            if !valid_item_regex.is_match(line) {
+                continue
+            }
+
+            let task_content: String = content_regex.captures(line).unwrap().get(1).unwrap().as_str().to_string();
+            if args.contains(&(pos + 1).to_string()) {
+
+                if !strikethrough_regex.is_match(line) {
+                    *line = format!("{}. ~~{}~~", pos+1, task_content);
+                } else {
+                    //Remove the leading and trailing ~~
+                    let mut chars = task_content.chars();
+                    chars.next();
+                    chars.next();
+                    chars.next_back();
+                    chars.next_back();
+                    *line = format!("{}. {}", pos+1, chars.as_str());
                 }
             }
         }
+        buffer.write(&self.todo.join("\n").as_bytes()).unwrap();
     }
 }
 
