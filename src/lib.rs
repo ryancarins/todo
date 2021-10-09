@@ -20,7 +20,7 @@ impl Todo {
             .home_dir()
             .to_path_buf();
 
-        let todo_path = home.join("TODO");
+        let todo_path = home.join(".TODO.md");
 
         let todofile = OpenOptions::new()
             .write(true)
