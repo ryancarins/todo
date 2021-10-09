@@ -215,8 +215,8 @@ impl Todo {
         }
         todo.append(&mut done);
         //Reapply numbering for markdown
-        for i in 0..todo.len() {
-            todo[i] = format!("{}. {}", i, todo[i]);
+        for (i, item) in todo.iter_mut().enumerate() {
+            *item = format!("{}. {}", i+1, item).to_owned();
         }
         
         //Turn our now complete todo vector into a string
