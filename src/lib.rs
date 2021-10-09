@@ -1,8 +1,9 @@
 use colored::*;
 use directories::BaseDirs;
+use regex::Regex;
 use std::fs::OpenOptions;
 use std::io::prelude::Read;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufReader, BufWriter, Write, BufRead};
 use std::path::PathBuf;
 use std::process;
 
@@ -46,27 +47,36 @@ impl Todo {
 
     // Prints every todo saved
     pub fn list(&self) {
+        //Check if task contains a double ~~ and ends with one
+        //technically this isn't part of the markdown spec but github
+        //markdown uses this for strikethrough
+        let strikethrough_regex = Regex::new(r"~~.*~~$").unwrap();
+
+        //Check that an item starts with the form number. e.g. 123. Some task here
+        let valid_item_regex = Regex::new(r"^[0-9]*\. ").unwrap();
+
+        //Get the actual task from a task that isn't complete
+        let regular_content_regex = Regex::new(r"^[0-9]*\. (.*)$").unwrap();
+
+        //Get the actual task starting from the first ~~ and ending at the ~~ at 
+        //the end of the line
+        let finished_content_regex = Regex::new(r"~~(.*)~~$").unwrap();
         // This loop will repeat itself for each taks in TODO file
         for (number, task) in self.todo.iter().enumerate() {
-            if task.len() > 5 {
-                // Converts virgin default number into a chad BOLD string
-                let number = (number + 1).to_string().bold();
+            //Skip any invalid line
+            if !valid_item_regex.is_match(task) {
+                continue;
+            }
+            // Converts virgin default number into a chad BOLD string
+            let number = (number + 1).to_string().bold();
 
-                // Saves the symbol of current task
-                let symbol = &task[..4];
-                // Saves a task without a symbol
-                let task = &task[4..];
-
-                // Checks if the current task is completed or not...
-                if symbol == "[*] " {
-                    // DONE
-                    // If the task is completed, then it prints it with a strikethrough
-                    println!("{} {}", number, task.strikethrough());
-                } else if symbol == "[ ] " {
-                    // NOT DONE
-                    // If the task is not completed yet, then it will print it as it is
-                    println!("{} {}", number, task);
-                }
+            // Checks if the current task is completed or not...
+            if strikethrough_regex.is_match(task) {
+                let task_content = finished_content_regex.captures(task).unwrap().get(1).unwrap().as_str();
+                println!("{} {}", number, task_content.strikethrough());
+            } else {
+                let task_content = regular_content_regex.captures(task).unwrap().get(1).unwrap().as_str();
+                println!("{} {}", number, task_content);
             }
         }
     }
@@ -78,25 +88,34 @@ impl Todo {
         } else if arg.is_empty() {
             eprintln!("todo raw takes 1 argument (done/todo)");
         } else {
+            //Check that an item starts with the form number. e.g. 123. Some task here
+            let valid_item_regex = Regex::new(r"^[0-9]*\. ").unwrap();
+            
+            //Check if task contains a double ~~ and ends with one
+            //technically this isn't part of the markdown spec but github
+            //markdown uses this for strikethrough
+            let strikethrough_regex = Regex::new(r"~~.*~~$").unwrap();
+
+            //Get the actual task from a task that isn't complete
+            let regular_content_regex = Regex::new(r"^[0-9]*\. (.*)$").unwrap();
+
+            //Get the actual task starting from the first ~~ and ending at the ~~ at 
+            //the end of the line
+            let finished_content_regex = Regex::new(r"~~(.*)~~$").unwrap();
+
             // This loop will repeat itself for each taks in TODO file
             for task in self.todo.iter() {
-                if task.len() > 5 {
-                    // Saves the symbol of current task
-                    let symbol = &task[..4];
-                    // Saves a task without a symbol
-                    let task = &task[4..];
-
-                    // Checks if the current task is completed or not...
-                    if symbol == "[*] " && arg[0] == "done" {
-                        // DONE
-                        //If the task is completed, then it prints it with a strikethrough
-                        println!("{}", task);
-                    } else if symbol == "[ ] " && arg[0] == "todo" {
-                        // NOT DONE
-
-                        //If the task is not completed yet, then it will print it as it is
-                        println!("{}", task);
-                    }
+                //Skip any invalid lines
+                if !valid_item_regex.is_match(task) {
+                    continue;
+                }
+                // Checks if the current task is completed or not...
+                if !strikethrough_regex.is_match(task) && arg[0] == "todo" {
+                    let task_content = regular_content_regex.captures(task).unwrap().get(1).unwrap().as_str();
+                    println!("{}", task_content);
+                } else if strikethrough_regex.is_match(task) && arg[0] == "done" {
+                    let task_content = finished_content_regex.captures(task).unwrap().get(1).unwrap().as_str();
+                    println!("{}", task_content);
                 }
             }
         }
@@ -114,14 +133,22 @@ impl Todo {
             .open(self.todo_path.clone())
             .expect("Couldn't open the todofile");
 
+        //Need this because making a writer moves the File reference which can't be cloned
+        let temp_files = OpenOptions::new()
+            .read(true)
+            .open(self.todo_path.clone())
+            .expect("Couldn't open the todofile");
+        let line_count = BufReader::new(temp_files).lines().count();
+
         let mut buffer = BufWriter::new(todofile);
-        for arg in args {
+        for (i, arg) in args.iter().enumerate() {
             if arg.trim().is_empty() {
                 continue;
             }
 
             // Appends a new task/s to the file
-            let line = format!("[ ] {}\n", arg);
+            // The plus one is because markdown lists start at 1
+            let line = format!("{}. {}\n", line_count + i + 1, arg);
             buffer
                 .write_all(line.as_bytes())
                 .expect("unable to write data");
