@@ -9,6 +9,7 @@ use std::process;
 pub struct Todo {
     pub todo: Vec<TodoItem>,
     pub todo_path: PathBuf,
+    pub num_colour: Option<(u8, u8, u8)>,
 }
 
 pub struct TodoItem {
@@ -17,7 +18,7 @@ pub struct TodoItem {
 }
 
 impl Todo {
-    pub fn new(todo_path: PathBuf) -> Result<Self, String> {
+    pub fn new(todo_path: PathBuf, num_colour: Option<(u8, u8, u8)>) -> Result<Self, String> {
         let mut todo: Vec<TodoItem> = Vec::new();
         let todofile = OpenOptions::new()
             .write(true)
@@ -77,7 +78,7 @@ impl Todo {
 
 
         // Returns todo
-        Ok(Self { todo, todo_path })
+        Ok(Self { todo, todo_path, num_colour })
     }
 
     // Prints every todo saved
@@ -85,7 +86,11 @@ impl Todo {
         // This loop will repeat itself for each taks in TODO file
         for (number, task) in self.todo.iter().enumerate() {
             // Converts virgin default number into a chad BOLD string
-            let number = (number + 1).to_string().bold();
+            let mut number = (number + 1).to_string().bold();
+            if self.num_colour.is_some() {
+                let colour = self.num_colour.unwrap();
+                number = number.truecolor(colour.0, colour.1, colour.2);
+            }
 
             // Checks if the current task is completed or not...
             if task.finished {

@@ -9,6 +9,7 @@ struct Config {
     todo_file_path: Option<String>,
     todo_file_name: Option<String>,
     global: Option<bool>,
+    num_colour: Option<(u8, u8, u8)>
 }
 
 fn get_config(config_path: PathBuf) -> Config {
@@ -23,6 +24,7 @@ fn get_config(config_path: PathBuf) -> Config {
             todo_file_path: None,
             todo_file_name: None,
             global: None,
+            num_colour: None,
         };
         fs::write(
             config_path,
@@ -31,7 +33,10 @@ fn get_config(config_path: PathBuf) -> Config {
             #Name of todo file, defaults to TODO\n\
             #todo_file_name = \"TODO\"\n\
             #Enable global config file, when enabled all todos are saved in the path above, otherwise it is saved in the directory the command is run in\n\
-            #global = true",
+            #global = true\n\
+            #Set colour of the index with an rgb value for printing just for fun :)\n\
+            #num_colour = [0, 0, 0]
+            ",
         )
         .expect("Failed to write config file");
     }
@@ -66,7 +71,7 @@ fn main() {
         todo_path = PathBuf::from(".").join(file_name);
     }
 
-    let mut todo = Todo::new(todo_path).expect("Couldn't create the todo instance");
+    let mut todo = Todo::new(todo_path, config.num_colour).expect("Couldn't create the todo instance");
 
     let args: Vec<String> = env::args().collect();
 
