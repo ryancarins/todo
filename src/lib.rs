@@ -295,7 +295,7 @@ impl Todo {
                 }
             }
         }
-        buffer.write(&self.todo.join("\n").as_bytes()).unwrap();
+        buffer.write_all(self.todo.join("\n").as_bytes()).unwrap();
     }
 }
 

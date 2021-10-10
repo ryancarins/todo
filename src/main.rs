@@ -51,10 +51,8 @@ fn main() {
         None => String::from("TODO"),
     };
 
-    let global = match config.global {
-        Some(val) => val,
-        None => true,
-    };
+    //Global defaults to true if not set
+    let global = config.global.unwrap_or(true);
 
     //If global is set use the global path otherwise use the current directory
     if global {
@@ -81,7 +79,7 @@ fn main() {
             "done" => todo.done(&args[2..]),
             "raw" => todo.raw(&args[2..]),
             "sort" => todo.sort(),
-            "help" | "--help" | "-h" | _ => help(),
+            _ => help(),
         }
     } else {
         todo.list();
