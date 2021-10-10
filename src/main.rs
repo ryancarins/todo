@@ -77,19 +77,19 @@ fn main() {
             "raw" => todo.raw(&args[2..]),
             "add" => {
                 todo.add(&args[2..]);
-                todo.write_to_file();
+                todo.write_to_file(global);
             },
             "rm" => {
                 todo.remove(&args[2..]);
-                todo.write_to_file();
+                todo.write_to_file(global);
             },
             "done" => {
                 todo.done(&args[2..]);
-                todo.write_to_file();
+                todo.write_to_file(global);
             },
             "sort" => {
                 todo.sort();
-                todo.write_to_file();
+                todo.write_to_file(global);
             }
             _ => help(),
         }

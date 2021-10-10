@@ -202,7 +202,7 @@ impl Todo {
         content_string
     }
 
-    pub fn write_to_file(&self) {
+    pub fn write_to_file(&self, global: bool) {
         let todofile = OpenOptions::new()
             .write(true) // a) write
             .truncate(true) // b) truncrate
@@ -210,6 +210,11 @@ impl Todo {
             .expect("Couldn't open the todo file");
 
         let mut buffer = BufWriter::new(todofile);
+        if global {
+            buffer.write_all("# TODO: Global\n".as_bytes()).unwrap();
+        } else {
+            buffer.write_all(format!("# TODO for project: {}\n", self.todo_path.parent().unwrap().canonicalize().unwrap().file_name().unwrap().to_str().unwrap()).as_bytes()).unwrap();
+        }
         buffer.write_all(self.get_content_string().as_bytes()).unwrap();
     }
 }
