@@ -74,11 +74,23 @@ fn main() {
         let command = &args[1];
         match &command[..] {
             "list" => todo.list(),
-            "add" => todo.add(&args[2..]),
-            "rm" => todo.remove(&args[2..]),
-            "done" => todo.done(&args[2..]),
             "raw" => todo.raw(&args[2..]),
-            "sort" => todo.sort(),
+            "add" => {
+                todo.add(&args[2..]);
+                todo.write_to_file();
+            },
+            "rm" => {
+                todo.remove(&args[2..]);
+                todo.write_to_file();
+            },
+            "done" => {
+                todo.done(&args[2..]);
+                todo.write_to_file();
+            },
+            "sort" => {
+                todo.sort();
+                todo.write_to_file();
+            }
             _ => help(),
         }
     } else {
