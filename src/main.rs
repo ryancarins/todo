@@ -51,10 +51,8 @@ fn main() {
         None => String::from("TODO"),
     };
 
-    let global = match config.global {
-        Some(val) => val,
-        None => true,
-    };
+    //Global defaults to true if not set
+    let global = config.global.unwrap_or(true);
 
     //If global is set use the global path otherwise use the current directory
     if global {
@@ -76,12 +74,24 @@ fn main() {
         let command = &args[1];
         match &command[..] {
             "list" => todo.list(),
-            "add" => todo.add(&args[2..]),
-            "rm" => todo.remove(&args[2..]),
-            "done" => todo.done(&args[2..]),
             "raw" => todo.raw(&args[2..]),
-            "sort" => todo.sort(),
-            "help" | "--help" | "-h" | _ => help(),
+            "add" => {
+                todo.add(&args[2..]);
+                todo.write_to_file(global);
+            },
+            "rm" => {
+                todo.remove(&args[2..]);
+                todo.write_to_file(global);
+            },
+            "done" => {
+                todo.done(&args[2..]);
+                todo.write_to_file(global);
+            },
+            "sort" => {
+                todo.sort();
+                todo.write_to_file(global);
+            }
+            _ => help(),
         }
     } else {
         todo.list();
