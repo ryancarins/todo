@@ -9,7 +9,7 @@ struct Config {
     todo_file_path: Option<String>,
     todo_file_name: Option<String>,
     global: Option<bool>,
-    num_colour: Option<(u8, u8, u8)>
+    num_colour: Option<(u8, u8, u8)>,
 }
 
 fn get_config(config_path: PathBuf) -> Config {
@@ -71,7 +71,8 @@ fn main() {
         todo_path = PathBuf::from(".").join(file_name);
     }
 
-    let mut todo = Todo::new(todo_path, config.num_colour).expect("Couldn't create the todo instance");
+    let mut todo =
+        Todo::new(todo_path, config.num_colour).expect("Couldn't create the todo instance");
 
     let args: Vec<String> = env::args().collect();
 
@@ -83,15 +84,15 @@ fn main() {
             "add" => {
                 todo.add(&args[2..]);
                 todo.write_to_file(global);
-            },
+            }
             "rm" => {
                 todo.remove(&args[2..]);
                 todo.write_to_file(global);
-            },
+            }
             "done" => {
                 todo.done(&args[2..]);
                 todo.write_to_file(global);
-            },
+            }
             "sort" => {
                 todo.sort();
                 todo.write_to_file(global);
