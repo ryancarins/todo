@@ -46,9 +46,9 @@ impl Todo {
             // Converts virgin default number into a chad BOLD string
             let mut number = (number + 1).to_string().bold();
             let colour = match &task.priority {
-                Priority::Low => (87, 189, 43),
-                Priority::Medium => (189, 184, 43),
-                Priority::High => (189, 43, 43),
+                Priority::Low => (152, 151, 26),
+                Priority::Medium => (215, 153, 33),
+                Priority::High => (204, 36, 29),
             };
             number = number.truecolor(colour.0, colour.1, colour.2);
 
