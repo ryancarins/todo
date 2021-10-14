@@ -14,7 +14,7 @@ pub struct Todo {
 #[derive(Deserialize, Serialize)]
 pub struct TodoItem {
     content: String,
-    finished: bool
+    finished: bool,
 }
 
 impl Todo {
@@ -61,7 +61,7 @@ impl Todo {
             // This loop will repeat itself for each taks in TODO file
             for task in self.todo.iter() {
                 // Checks if the current task is completed or not...
-                if (!task.finished && arg[0] == "todo") || (task.finished && arg[0] == "done"){
+                if (!task.finished && arg[0] == "todo") || (task.finished && arg[0] == "done") {
                     println!("{}", task.content);
                 }
             }
@@ -81,7 +81,10 @@ impl Todo {
 
             // Appends a new task/s to the file
             // The plus one is because markdown lists start at 1
-            self.todo.push(TodoItem{content: arg.to_string(), finished: false});
+            self.todo.push(TodoItem {
+                content: arg.to_string(),
+                finished: false,
+            });
         }
     }
 
@@ -93,11 +96,13 @@ impl Todo {
         }
 
         //Do a sweep over the indicies to mark for removal
-        //This will allow us to traverse the marked vector backwards 
+        //This will allow us to traverse the marked vector backwards
         //so that indicies remain the same as they are removed
         let mut marked = Vec::new();
         for (pos, task) in self.todo.iter().enumerate() {
-            if (args.contains(&"done".to_string()) && task.finished ) || args.contains(&(pos + 1).to_string()) {
+            if (args.contains(&"done".to_string()) && task.finished)
+                || args.contains(&(pos + 1).to_string())
+            {
                 marked.push(pos);
             }
         }
@@ -119,7 +124,7 @@ impl Todo {
         //for task in self.todo.iter_mut() {
         while !self.todo.is_empty() {
             //Has O(n) complexity but maintains order. If too slow replace with VecDeque?
-            let task = self.todo.remove(0); 
+            let task = self.todo.remove(0);
             if !task.finished {
                 todo.push(task);
             } else {
@@ -149,9 +154,9 @@ impl Todo {
         let mut content_string = String::new();
         for (i, task) in self.todo.iter().enumerate() {
             if task.finished {
-                content_string.push_str(&format!("{}. ~~{}~~\n", i+1, task.content));
+                content_string.push_str(&format!("{}. ~~{}~~\n", i + 1, task.content));
             } else {
-                content_string.push_str(&format!("{}. {}\n", i+1, task.content));
+                content_string.push_str(&format!("{}. {}\n", i + 1, task.content));
             }
         }
         content_string
@@ -170,7 +175,9 @@ impl Todo {
         } else {
             buffer.write_all(format!("# TODO for project: {}\n", std::env::current_dir().unwrap().to_str().unwrap()).as_bytes());
         }
-        buffer.write_all(self.get_content_string().as_bytes()).unwrap();
+        buffer
+            .write_all(self.get_content_string().as_bytes())
+            .unwrap();
     }
 
     pub fn save_data(&self, todo_path: PathBuf) {
@@ -180,7 +187,6 @@ impl Todo {
         }
     }
 }
-
 
 const TODO_HELP: &str = "Usage: todo [COMMAND] [ARGUMENTS]
 Todo is a super fast and simple tasks organizer written in rust
