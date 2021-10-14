@@ -14,7 +14,7 @@ in various locations so backup your todo list if you want to try anything
     * a global flag that operates in the current directory when set to false
     * a flag to always export as markdown every time the program is run
 * Instead of appending to or modifying a text file I now
-use [bincode]() to store data and optionally export to markdown
+use [bincode](https://github.com/bincode-org/bincode) to store data and optionally export to markdown
 * Coloured priority indicators
 
 # todo
