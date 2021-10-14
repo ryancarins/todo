@@ -11,6 +11,7 @@ struct Config {
     markdown_export_path: Option<String>,
     markdown_export_file_name: Option<String>,
     global: Option<bool>,
+    always_export: Option<bool>,
     num_colour: Option<(u8, u8, u8)>
 }
 
@@ -28,6 +29,7 @@ fn get_config(config_path: PathBuf) -> Config {
             markdown_export_path: None,
             markdown_export_file_name: None,
             global: None,
+            always_export: None,
             num_colour: None,
         };
         fs::write(
@@ -42,6 +44,8 @@ fn get_config(config_path: PathBuf) -> Config {
             #markdown_export_file_name = \"TODO.md\"\n\n\
             #Enable global config file, when enabled all todos are saved in the path above, otherwise it is saved in the directory the command is run in\n\
             #global = true\n\n\
+            #If set then always export to markdown when the program is run\n\
+            #always_export = true\n\n\
             #Set colour of the index with an rgb value for printing just for fun :)\n\
             #num_colour = [0, 0, 0]
             ",
@@ -121,11 +125,14 @@ fn main() {
                 todo.save_data(todo_path);
             },
             "export" => {
-                todo.export_markdown(markdown_path, global);
+                todo.export_markdown(markdown_path.clone(), global);
             }
             _ => help(),
         }
     } else {
         todo.list(config.num_colour);
+    }
+    if config.always_export.is_some() && config.always_export.unwrap() {
+        todo.export_markdown(markdown_path, global);
     }
 }

@@ -162,13 +162,13 @@ impl Todo {
             .write(true) // a) write
             .truncate(true) // b) truncrate
             .open(markdown_path.clone())
-            .expect("Couldn't open the todo file");
+            .expect("Couldn't open the markdown file");
 
         let mut buffer = BufWriter::new(todofile);
         if global {
             buffer.write_all("# TODO: Global\n".as_bytes()).unwrap();
         } else {
-            buffer.write_all(format!("# TODO for project: {}\n", markdown_path.canonicalize().unwrap().file_name().unwrap().to_str().unwrap()).as_bytes()).unwrap();
+            buffer.write_all(format!("# TODO for project: {}\n", std::env::current_dir().unwrap().to_str().unwrap()).as_bytes());
         }
         buffer.write_all(self.get_content_string().as_bytes()).unwrap();
     }
