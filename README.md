@@ -1,3 +1,22 @@
+# Warning
+This is my fork of [sioodomy's](https://github.com/sioodmy/todo) todo program.
+I keep all of my branches around feel free to mess with any of them. I use the
+personal_changes branch but keep in mind I have implemented many breaking changes
+in various locations so backup your todo list if you want to try anything
+
+## So far I've added
+* Export to github flavoured markdown
+* A toml config file with the option to change various things including:
+    * todo file path
+    * todo file name
+    * markdown path
+    * markdown name
+    * a global flag that operates in the current directory when set to false
+    * a flag to always export as markdown every time the program is run
+* Instead of appending to or modifying a text file I now
+use [bincode]() to store data and optionally export to markdown
+* Coloured priority indicators
+
 # todo
 A lightweight and super fast cli todo program written in rust under 200 sloc
 
