@@ -163,6 +163,7 @@ impl Todo {
 
     pub fn export_markdown(&self, markdown_path: PathBuf, global: bool) {
         let todofile = OpenOptions::new()
+            .create(true)
             .write(true) // a) write
             .truncate(true) // b) truncrate
             .open(markdown_path)
