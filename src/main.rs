@@ -8,6 +8,8 @@ use todo_bin::{help, Todo};
 struct Config {
     todo_file_path: Option<String>,
     todo_file_name: Option<String>,
+    markdown_export_path: Option<String>,
+    markdown_export_file_name: Option<String>,
     global: Option<bool>,
     num_colour: Option<(u8, u8, u8)>
 }
@@ -23,17 +25,23 @@ fn get_config(config_path: PathBuf) -> Config {
         config = Config {
             todo_file_path: None,
             todo_file_name: None,
+            markdown_export_path: None,
+            markdown_export_file_name: None,
             global: None,
             num_colour: None,
         };
         fs::write(
             config_path,
             "#Path where todo file will be saved, defaults to /home/user/\n\
-            #todo_file_path = \"/path/to/TODO\"\n\
+            #todo_file_path = \"/path/to/TODO\"\n\n\
+            #Path where markdown file will be saved, defaults to /home/user/\n\
+            #markdown_export_path = \"/path/to/TODO\"\n\n\
             #Name of todo file, defaults to TODO\n\
-            #todo_file_name = \"TODO\"\n\
+            #todo_file_name = \"TODO\"\n\n\
+            #Name of markdown file, defaults to TODO.md\n\
+            #markdown_export_file_name = \"TODO.md\"\n\n\
             #Enable global config file, when enabled all todos are saved in the path above, otherwise it is saved in the directory the command is run in\n\
-            #global = true\n\
+            #global = true\n\n\
             #Set colour of the index with an rgb value for printing just for fun :)\n\
             #num_colour = [0, 0, 0]
             ",
@@ -49,12 +57,19 @@ fn main() {
 
     let config = get_config(config_path);
     let todo_path: PathBuf;
+    let markdown_path: PathBuf;
 
     //If a file name is specified in the config use that otherwise use TODO
-    let file_name = match config.todo_file_name {
+    let todo_name = match config.todo_file_name {
         Some(name) => name,
         None => String::from("TODO"),
     };
+
+    let markdown_name = match config.markdown_export_file_name {
+        Some(file_name) => file_name,
+        None => String::from("TODO.md"),
+    };
+
 
     //Global defaults to true if not set
     let global = config.global.unwrap_or(true);
@@ -64,41 +79,53 @@ fn main() {
         //If a path is specified in the config use that, otherwise use the users
         //home as a default
         todo_path = match config.todo_file_path {
-            Some(todo_file_path) => PathBuf::from(todo_file_path).join(file_name),
-            None => user_dirs.home_dir().to_path_buf().join(file_name),
+            Some(todo_file_path) => PathBuf::from(todo_file_path).join(todo_name),
+            None => user_dirs.home_dir().to_path_buf().join(todo_name),
         };
-    } else {
-        todo_path = PathBuf::from(".").join(file_name);
-    }
 
-    let mut todo = Todo::new(todo_path, config.num_colour).expect("Couldn't create the todo instance");
+        markdown_path = match config.markdown_export_path {
+        Some(file_path) => PathBuf::from(file_path),
+        None => user_dirs.home_dir().to_path_buf(),
+    }.join(markdown_name);
+
+    } else {
+        todo_path = PathBuf::from(".").join(todo_name);
+        markdown_path = PathBuf::from(".").join(markdown_name);
+    }
+    
+    
+
+    let mut todo = Todo::new(todo_path.clone()).expect("Couldn't create the todo instance");
 
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 1 {
         let command = &args[1];
         match &command[..] {
-            "list" => todo.list(),
+            "list" => todo.list(config.num_colour),
             "raw" => todo.raw(&args[2..]),
             "add" => {
                 todo.add(&args[2..]);
-                todo.write_to_file(global);
+                todo.save_data(todo_path);
             },
             "rm" => {
                 todo.remove(&args[2..]);
-                todo.write_to_file(global);
+                todo.save_data(todo_path);
             },
             "done" => {
                 todo.done(&args[2..]);
-                todo.write_to_file(global);
+                todo.save_data(todo_path);
             },
             "sort" => {
                 todo.sort();
-                todo.write_to_file(global);
+                todo.save_data(todo_path);
+            },
+            "export" => {
+                todo.export_markdown(markdown_path, global);
             }
             _ => help(),
         }
     } else {
-        todo.list();
+        todo.list(config.num_colour);
     }
 }

@@ -1,94 +1,44 @@
 use colored::*;
-use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
-use std::io::prelude::Read;
-use std::io::{BufReader, BufWriter, Write};
+use std::fs;
+use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::process;
 
+#[derive(Deserialize, Serialize)]
 pub struct Todo {
     pub todo: Vec<TodoItem>,
-    pub todo_path: PathBuf,
-    pub num_colour: Option<(u8, u8, u8)>,
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct TodoItem {
     content: String,
     finished: bool
 }
 
 impl Todo {
-    pub fn new(todo_path: PathBuf, num_colour: Option<(u8, u8, u8)>) -> Result<Self, String> {
-        let mut todo: Vec<TodoItem> = Vec::new();
-        let todofile = OpenOptions::new()
-            .write(true)
-            .read(true)
-            .create(true)
-            .open(todo_path.clone())
-            .expect("Couldn't open the todofile");
+    pub fn new(todo_path: PathBuf) -> Result<Self, String> {
+       let todo: Todo;
 
-        //Check if string is a completed task
-        let strikethrough_regex = Regex::new(r"~~.*~~$").unwrap();
-        //Get the actual task from a task that is complete selecting between
-        //~~ and the ~~ at the end of the line
-        let finished_content_regex = Regex::new(r"~~(.*)~~$").unwrap();
-
-        let is_valid = Regex::new(r"^[0-9]*\. ").unwrap();
-        //Get the actual task from a task that isn't complete
-        let regular_content_regex = Regex::new(r"^[0-9]*\. (.*)$").unwrap();
-
-        
-        // Creates a new buf reader
-        let mut buf_reader = BufReader::new(&todofile);
-
-        // Empty String ready to be filled with TODOs
-        let mut contents = String::new();
-
-        // Loads "contents" string with data
-        buf_reader.read_to_string(&mut contents).unwrap();
-
-        // Splits contents of the TODO file into lines
-        let mut lines: Vec<String> = contents.to_string().lines().map(str::to_string).collect();
-
-        //Build TodoItems from the strings
-        for line in lines.iter_mut() {
-            if !is_valid.is_match(line) {
-                continue;
-            }
-            if strikethrough_regex.is_match(line) {
-                let task_content = finished_content_regex
-                    .captures(line)
-                    .unwrap()
-                    .get(1)
-                    .unwrap()
-                    .as_str();
-
-                todo.push(TodoItem{content: task_content.to_string(), finished: true})
-            } else {
-                let task_content = regular_content_regex
-                    .captures(line)
-                    .unwrap()
-                    .get(1)
-                    .unwrap()
-                    .as_str();
-
-                todo.push(TodoItem{content: task_content.to_string(), finished: false})
-            }
+        if todo_path.exists() {
+            let serialized = fs::read(&todo_path).expect("Failed to read todo file");
+            todo = bincode::deserialize(&serialized).expect("Failed to parse bincode");
+        } else {
+            todo = Todo { todo: Vec::new() }
         }
 
-
-        // Returns todo
-        Ok(Self { todo, todo_path, num_colour })
+        Ok(todo)
     }
 
     // Prints every todo saved
-    pub fn list(&self) {
+    pub fn list(&self, num_colour: Option<(u8, u8, u8)>) {
         // This loop will repeat itself for each taks in TODO file
         for (number, task) in self.todo.iter().enumerate() {
             // Converts virgin default number into a chad BOLD string
             let mut number = (number + 1).to_string().bold();
-            if self.num_colour.is_some() {
-                let colour = self.num_colour.unwrap();
+            if num_colour.is_some() {
+                let colour = num_colour.unwrap();
                 number = number.truecolor(colour.0, colour.1, colour.2);
             }
 
@@ -207,20 +157,27 @@ impl Todo {
         content_string
     }
 
-    pub fn write_to_file(&self, global: bool) {
+    pub fn export_markdown(&self, markdown_path: PathBuf, global: bool) {
         let todofile = OpenOptions::new()
             .write(true) // a) write
             .truncate(true) // b) truncrate
-            .open(self.todo_path.clone())
+            .open(markdown_path.clone())
             .expect("Couldn't open the todo file");
 
         let mut buffer = BufWriter::new(todofile);
         if global {
             buffer.write_all("# TODO: Global\n".as_bytes()).unwrap();
         } else {
-            buffer.write_all(format!("# TODO for project: {}\n", self.todo_path.parent().unwrap().canonicalize().unwrap().file_name().unwrap().to_str().unwrap()).as_bytes()).unwrap();
+            buffer.write_all(format!("# TODO for project: {}\n", markdown_path.canonicalize().unwrap().file_name().unwrap().to_str().unwrap()).as_bytes()).unwrap();
         }
         buffer.write_all(self.get_content_string().as_bytes()).unwrap();
+    }
+
+    pub fn save_data(&self, todo_path: PathBuf) {
+        let bincode = bincode::serialize(self).expect("Failed to serialise TODO struct");
+        if fs::write(&todo_path, bincode).is_err() {
+            panic!("Failed to write todo file")
+        }
     }
 }
 
