@@ -214,7 +214,9 @@ Available commands:
         Example: todo sort 
     - raw [todo/done]
         prints nothing but done/incompleted tasks in plain text, useful for scripting
-        Example: todo raw done
+    - export
+        exports tasks to the markdown file specified in the config.
+        this can be enabled by default in the config file
 ";
 
 pub fn help() {
