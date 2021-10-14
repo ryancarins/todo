@@ -12,7 +12,7 @@ struct Config {
     markdown_export_file_name: Option<String>,
     global: Option<bool>,
     always_export: Option<bool>,
-    num_colour: Option<(u8, u8, u8)>
+    num_colour: Option<(u8, u8, u8)>,
 }
 
 fn get_config(config_path: PathBuf) -> Config {
@@ -74,7 +74,6 @@ fn main() {
         None => String::from("TODO.md"),
     };
 
-
     //Global defaults to true if not set
     let global = config.global.unwrap_or(true);
 
@@ -88,16 +87,14 @@ fn main() {
         };
 
         markdown_path = match config.markdown_export_path {
-        Some(file_path) => PathBuf::from(file_path),
-        None => user_dirs.home_dir().to_path_buf(),
-    }.join(markdown_name);
-
+            Some(file_path) => PathBuf::from(file_path),
+            None => user_dirs.home_dir().to_path_buf(),
+        }
+        .join(markdown_name);
     } else {
         todo_path = PathBuf::from(".").join(todo_name);
         markdown_path = PathBuf::from(".").join(markdown_name);
     }
-    
-    
 
     let mut todo = Todo::new(todo_path.clone()).expect("Couldn't create the todo instance");
 
@@ -111,19 +108,19 @@ fn main() {
             "add" => {
                 todo.add(&args[2..]);
                 todo.save_data(todo_path);
-            },
+            }
             "rm" => {
                 todo.remove(&args[2..]);
                 todo.save_data(todo_path);
-            },
+            }
             "done" => {
                 todo.done(&args[2..]);
                 todo.save_data(todo_path);
-            },
+            }
             "sort" => {
                 todo.sort();
                 todo.save_data(todo_path);
-            },
+            }
             "export" => {
                 todo.export_markdown(markdown_path.clone(), global);
             }

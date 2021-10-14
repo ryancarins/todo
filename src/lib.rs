@@ -1,7 +1,7 @@
 use colored::*;
 use serde::{Deserialize, Serialize};
-use std::fs::OpenOptions;
 use std::fs;
+use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::process;
@@ -19,7 +19,7 @@ pub struct TodoItem {
 
 impl Todo {
     pub fn new(todo_path: PathBuf) -> Result<Self, String> {
-       let todo: Todo;
+        let todo: Todo;
 
         if todo_path.exists() {
             let serialized = fs::read(&todo_path).expect("Failed to read todo file");
@@ -37,8 +37,7 @@ impl Todo {
         for (number, task) in self.todo.iter().enumerate() {
             // Converts virgin default number into a chad BOLD string
             let mut number = (number + 1).to_string().bold();
-            if num_colour.is_some() {
-                let colour = num_colour.unwrap();
+            if let Some(colour) = num_colour {
                 number = number.truecolor(colour.0, colour.1, colour.2);
             }
 
@@ -166,14 +165,20 @@ impl Todo {
         let todofile = OpenOptions::new()
             .write(true) // a) write
             .truncate(true) // b) truncrate
-            .open(markdown_path.clone())
+            .open(markdown_path)
             .expect("Couldn't open the markdown file");
 
         let mut buffer = BufWriter::new(todofile);
         if global {
             buffer.write_all("# TODO: Global\n".as_bytes()).unwrap();
         } else {
-            buffer.write_all(format!("# TODO for project: {}\n", std::env::current_dir().unwrap().to_str().unwrap()).as_bytes());
+            buffer.write_all(
+                format!(
+                    "# TODO for project: {}\n",
+                    std::env::current_dir().unwrap().to_str().unwrap()
+                )
+                .as_bytes(),
+            ).expect("Failed to write project header");
         }
         buffer
             .write_all(self.get_content_string().as_bytes())
