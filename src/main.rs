@@ -12,7 +12,6 @@ struct Config {
     markdown_export_file_name: Option<String>,
     global: Option<bool>,
     always_export: Option<bool>,
-    num_colour: Option<(u8, u8, u8)>,
 }
 
 fn get_config(config_path: PathBuf) -> Config {
@@ -30,7 +29,6 @@ fn get_config(config_path: PathBuf) -> Config {
             markdown_export_file_name: None,
             global: None,
             always_export: None,
-            num_colour: None,
         };
         fs::write(
             config_path,
@@ -46,8 +44,6 @@ fn get_config(config_path: PathBuf) -> Config {
             #global = true\n\n\
             #If set then always export to markdown when the program is run\n\
             #always_export = true\n\n\
-            #Set colour of the index with an rgb value for printing just for fun :)\n\
-            #num_colour = [0, 0, 0]
             ",
         )
         .expect("Failed to write config file");
@@ -103,7 +99,7 @@ fn main() {
     if args.len() > 1 {
         let command = &args[1];
         match &command[..] {
-            "list" => todo.list(config.num_colour),
+            "list" => todo.list(),
             "raw" => todo.raw(&args[2..]),
             "add" => {
                 todo.add(&args[2..]);
@@ -124,10 +120,14 @@ fn main() {
             "export" => {
                 todo.export_markdown(markdown_path.clone(), global);
             }
+            "priority" => {
+                todo.set_priority(&args[2..]);
+                todo.save_data(todo_path);
+            }
             _ => help(),
         }
     } else {
-        todo.list(config.num_colour);
+        todo.list();
     }
     if config.always_export.is_some() && config.always_export.unwrap() {
         todo.export_markdown(markdown_path, global);

@@ -15,6 +15,14 @@ pub struct Todo {
 pub struct TodoItem {
     content: String,
     finished: bool,
+    priority: Priority
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+enum Priority {
+    Low,
+    Medium,
+    High
 }
 
 impl Todo {
@@ -32,14 +40,17 @@ impl Todo {
     }
 
     // Prints every todo saved
-    pub fn list(&self, num_colour: Option<(u8, u8, u8)>) {
+    pub fn list(&self) {
         // This loop will repeat itself for each taks in TODO file
         for (number, task) in self.todo.iter().enumerate() {
             // Converts virgin default number into a chad BOLD string
             let mut number = (number + 1).to_string().bold();
-            if let Some(colour) = num_colour {
-                number = number.truecolor(colour.0, colour.1, colour.2);
-            }
+            let colour = match &task.priority {
+                Priority::Low => (87, 189, 43),
+                Priority::Medium => (189, 184, 43),
+                Priority::High => (189, 43, 43),
+            };
+            number = number.truecolor(colour.0, colour.1, colour.2);
 
             // Checks if the current task is completed or not...
             if task.finished {
@@ -73,18 +84,28 @@ impl Todo {
             process::exit(1);
         }
 
+        let mut priority = Priority::Low;
         for arg in args {
             if arg.trim().is_empty() {
                 continue;
             }
+            match arg.as_str() {
+                "low" => priority = Priority::Low,
+                "medium" => priority = Priority::Medium,
+                "high" => priority = Priority::High,
+                _ => {
+                    self.todo.push(TodoItem {
+                    content: arg.to_string(),
+                    finished: false,
+                    priority: priority.clone()
+            });
+
+                }
+            }
 
             // Appends a new task/s to the file
             // The plus one is because markdown lists start at 1
-            self.todo.push(TodoItem {
-                content: arg.to_string(),
-                finished: false,
-            });
-        }
+                    }
     }
 
     // Removes a task
@@ -192,15 +213,42 @@ impl Todo {
             panic!("Failed to write todo file")
         }
     }
+
+    pub fn set_priority(&mut self, args: &[String]) {
+        if args.len() < 1 {
+            eprintln!("todo priority takes at least 2 arguments");
+            process::exit(1);
+        }
+        let priority = match args[0].as_str() {
+            "low" => Priority::Low,
+            "medium" => Priority::Medium,
+            "high" => Priority::High,
+            _ => {
+                eprintln!("The first argument should be low, medium, or high");
+                process::exit(1);
+            }
+        };
+        for (pos, task) in self.todo.iter_mut().enumerate() {
+            if args.contains(&(pos + 1).to_string())
+            {
+                task.priority = priority.clone();
+            }
+        }
+
+    }
 }
 
-const TODO_HELP: &str = "Usage: todo [COMMAND] [ARGUMENTS]
+const TODO_HELP: &str = r#"Usage: todo [COMMAND] [ARGUMENTS]
 Todo is a super fast and simple tasks organizer written in rust
 Example: todo list
 Available commands:
-    - add [TASK/s] 
+    - add [TASK/s]
         adds new task/s
-        Example: todo add \"buy carrots\"
+        Example: todo add "buy carrots"
+        you can set priority like this
+        Example: todo add medium "buy carrots" "buy more carrots"
+        or
+        Example: todo add medium "buy carrots" high "buy more carrots"
     - list
         lists all tasks
         Example: todo list
@@ -218,7 +266,9 @@ Available commands:
     - export
         exports tasks to the markdown file specified in the config.
         this can be enabled by default in the config file
-";
+    - priority PRIORITY [TASKS/s]
+        set the task priority to low, medium, or high
+"#;
 
 pub fn help() {
     // For readability
