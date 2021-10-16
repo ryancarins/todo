@@ -5,6 +5,7 @@ use std::fs::OpenOptions;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 use std::process;
+use chrono::{Local, DateTime};
 
 #[derive(Deserialize, Serialize)]
 pub struct Todo {
@@ -14,8 +15,9 @@ pub struct Todo {
 #[derive(Deserialize, Serialize)]
 pub struct TodoItem {
     content: String,
-    finished: bool,
-    priority: Priority
+    priority: Priority,
+    creation_date: DateTime<Local>,
+    finished_date: Option<DateTime<Local>>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -53,8 +55,8 @@ impl Todo {
             number = number.truecolor(colour.0, colour.1, colour.2);
 
             // Checks if the current task is completed or not...
-            if task.finished {
-                println!("{} {}", number, &task.content.strikethrough());
+            if task.finished_date.is_some() {
+                println!("{} {} Finished on: {}", number, &task.content.strikethrough(), task.finished_date.unwrap().format("%d %b %Y"));
             } else {
                 println!("{} {}", number, &task.content);
             }
@@ -71,7 +73,7 @@ impl Todo {
             // This loop will repeat itself for each taks in TODO file
             for task in self.todo.iter() {
                 // Checks if the current task is completed or not...
-                if (!task.finished && arg[0] == "todo") || (task.finished && arg[0] == "done") {
+                if (task.finished_date.is_none() && arg[0] == "todo") || (task.finished_date.is_some() && arg[0] == "done") {
                     println!("{}", task.content);
                 }
             }
@@ -89,23 +91,21 @@ impl Todo {
             if arg.trim().is_empty() {
                 continue;
             }
+            let local_time = Local::now();
             match arg.as_str() {
                 "low" => priority = Priority::Low,
                 "medium" => priority = Priority::Medium,
                 "high" => priority = Priority::High,
                 _ => {
                     self.todo.push(TodoItem {
-                    content: arg.to_string(),
-                    finished: false,
-                    priority: priority.clone()
-            });
-
+                        content: arg.to_string(),
+                        priority: priority.clone(),
+                        creation_date: local_time,
+                        finished_date: None,
+                    });
                 }
             }
-
-            // Appends a new task/s to the file
-            // The plus one is because markdown lists start at 1
-                    }
+        }
     }
 
     // Removes a task
@@ -120,7 +120,7 @@ impl Todo {
         //so that indicies remain the same as they are removed
         let mut marked = Vec::new();
         for (pos, task) in self.todo.iter().enumerate() {
-            if (args.contains(&"done".to_string()) && task.finished)
+            if (args.contains(&"done".to_string()) && task.finished_date.is_some())
                 || args.contains(&(pos + 1).to_string())
             {
                 marked.push(pos);
@@ -145,7 +145,7 @@ impl Todo {
         while !self.todo.is_empty() {
             //Has O(n) complexity but maintains order. If too slow replace with VecDeque?
             let task = self.todo.remove(0);
-            if !task.finished {
+            if task.finished_date.is_none() {
                 todo.push(task);
             } else {
                 done.push(task);
@@ -165,7 +165,7 @@ impl Todo {
 
         for (pos, task) in self.todo.iter_mut().enumerate() {
             if args.contains(&(pos + 1).to_string()) {
-                task.finished = !task.finished;
+                task.finished_date = Some(Local::now());
             }
         }
     }
@@ -173,7 +173,7 @@ impl Todo {
     fn get_content_string(&self) -> String {
         let mut content_string = String::new();
         for (i, task) in self.todo.iter().enumerate() {
-            if task.finished {
+            if task.finished_date.is_some() {
                 content_string.push_str(&format!("{}. ~~{}~~\n", i + 1, task.content));
             } else {
                 content_string.push_str(&format!("{}. {}\n", i + 1, task.content));
